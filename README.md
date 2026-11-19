@@ -211,6 +211,44 @@ The work splits into two tracks that run side by side for 14 days. Person A owns
 - A 15-minute check-in every day: what landed, what's next, what's blocking.
 - Each handoff is a file in the shared repo, not a message. B pulls it and moves on.
 
+&#91;embedded content: two-week plan · 2 people, 3 handoffs\]
+
+Arrows show which way each handoff goes: A gives B phrases (end of day 3) and captions (end of day 6); B gives A generated samples to evaluate (end of day 10).
+
+**Person A: data, captions, evaluation**
+
+- [ ] Day 1: Agree file formats with B. Request Filosax access. Write the Weimar loader.
+- [ ] Day 2: Chord-symbol normalizer; quantize onsets to 12 ticks per beat.
+- [ ] Day 3: Phrase cutter, solo-level split, transposition augmentation. **Hand off H1: phrase files.**
+- [ ] Day 4: Feature extractor for every caption feature (add Filosax if access came through).
+- [ ] Day 5: Write 25 example captions by hand; draft the captioning prompt.
+- [ ] Day 6: LLM captioning, 3 per phrase; spot-check 30 against the audio. **Hand off H2: captions.**
+- [ ] Day 7: Write descriptions for the 50 human test phrases (B writes their own set for the same phrases).
+- [ ] Day 8: Chord-fit and control-test scripts; sanity-check them on real phrases.
+- [ ] Day 9: Diversity and copying scripts.
+- [ ] Day 10: Build the listening-test form; recruit 6–8 musicians.
+- [ ] Day 11: Run all metrics on B's samples (H3).
+- [ ] Day 12: Run the listening test; make results tables and figures.
+- [ ] Days 13–14: Write the data, captions, and results sections; rehearse the presentation.
+
+**Person B: model and generation**
+
+- [ ] Day 1: Agree file formats with A. Set up repo and environment; confirm GPU access.
+- [ ] Day 2: REMI tokenizer with `miditok`; check tokens decode back to the same MIDI. Decoder-only model and training loop; overfit one batch of fake data.
+- [ ] Day 3: Rendering script: MIDI to audio with swing, soundfont, simple backing.
+- [ ] Day 4: Train the unconditioned baseline on H1.
+- [ ] Day 5: Chord encoder + current-chord embedding; start the chords-only run.
+- [ ] Day 6: Frozen text encoder, projection, cross-attention; test with placeholder captions.
+- [ ] Day 7: Train the full model on H2 with caption dropout. Write your 50 human test descriptions (about an hour).
+- [ ] Day 8: Sampling: token masks, temperature, top-p, classifier-free guidance.
+- [ ] Day 9: Listen together with A; if the model ignores the text, switch on the fallback (feature values as an embedding) and retrain.
+- [ ] Day 10: Generate evaluation sets from all three models and the demo solos. **Hand off H3: samples.**
+- [ ] Day 11: Guidance-scale ablation (1, 2, 3); render the listening-test clips.
+- [ ] Day 12: Code freeze; help run the listening test.
+- [ ] Days 13–14: Write the model and training sections; build slides and the live demo.
+
+**Where it can slip.** Day 9 is the riskiest day: if the text isn't steering the output, the retrain eats day 10. Days 11–12 have a little slack for that because the ablation is optional.
+
 ## Risks and open questions
 
 The biggest risk is that the model ignores the text and leans entirely on the chords. The control test exists to catch exactly that.
