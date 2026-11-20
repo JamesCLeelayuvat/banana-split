@@ -40,13 +40,14 @@ def test_token_layout_matches_design_doc():
     assert not any(x.startswith("Velocity") for x in s)
 
 
-def test_vocab_size_about_200():
+def test_vocab_size():
     names = set(remi.vocab())
     assert sum(n.startswith("Position_") for n in names) == remi.TICKS_PER_BAR
     assert sum(n.startswith("Pitch_") for n in names) == remi.PITCH_MAX - remi.PITCH_MIN + 1
     assert sum(n.startswith("Duration_") for n in names) == remi.MAX_DUR
     assert {"PAD_None", "BOS_None", "EOS_None", "Bar_None"} <= names
-    assert len(names) < 210
+    n_pitch = remi.PITCH_MAX - remi.PITCH_MIN + 1
+    assert len(names) == remi.TICKS_PER_BAR + n_pitch + remi.MAX_DUR + 4  # + PAD BOS EOS Bar
 
 
 @pytest.mark.parametrize("seed", range(50))

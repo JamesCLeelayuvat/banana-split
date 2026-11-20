@@ -8,7 +8,7 @@ max_rest_fraction: 0.6      # drop phrases that are mostly rest
 transpose:
   min: -5
   max: 6
-  pitch_range: [46, 96]     # reject transposed notes outside the instrument range
+  pitch_range: [0, 126]     # no instrument-range filtering; 126 is the highest pitch miditok allows
 
 splits:
   train: 0.8

@@ -1,6 +1,6 @@
 """miditok REMI config and encode/decode for solo phrases.
 
-Tokens (miditok names): Bar_None, Position_k (12 ticks/beat, 48/bar), Pitch_p (instrument range),
+Tokens (miditok names): Bar_None, Position_k (12 ticks/beat, 48/bar), Pitch_p (0-126, the widest range miditok allows),
 Duration_b.t.12 (1 tick up to 2 bars), specials PAD_None / BOS_None / EOS_None. No velocity,
 tempo, chord, or rest tokens: rests are implied by gaps between positions.
 
