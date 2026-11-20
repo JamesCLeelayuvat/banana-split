@@ -1,0 +1,18 @@
+model_config: configs/model_small.yaml
+conditioning: full          # none | chords | full
+
+optimizer: adamw
+lr: 3.0e-4                  # lower to 1e-4 if loss spikes
+weight_decay: 0.01
+warmup_steps: 1000
+schedule: cosine
+batch_size: 32
+max_epochs: 100
+dropout: 0.1                # raise to 0.2 if overfitting
+label_smoothing: 0.1
+caption_dropout: 0.15       # empty caption -> enables classifier-free guidance
+early_stop_patience: 5
+seed: 0
+
+checkpoint_dir: outputs/checkpoints
+log: wandb                  # wandb | none

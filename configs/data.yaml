@@ -1,0 +1,26 @@
+# Phrase extraction and augmentation
+ticks_per_beat: 12          # fits straight 16ths and 8th-note triplets
+beats_per_bar: 4
+phrase_bars: 4
+stride_bars: 2
+max_rest_fraction: 0.6      # drop phrases that are mostly rest
+
+transpose:
+  min: -5
+  max: 6
+  pitch_range: [46, 96]     # reject transposed notes outside the instrument range
+
+splits:
+  train: 0.8
+  val: 0.1
+  test: 0.1
+  by: solo                  # never split overlapping phrases across sets
+  seed: 0
+  heldout_tunes: []         # whole tunes kept out as an unseen-changes test
+
+paths:
+  raw: data/raw
+  phrases: data/phrases
+  splits: data/splits
+  features: data/features
+  captions: data/captions/captions.jsonl

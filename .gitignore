@@ -1,0 +1,28 @@
+# Data: share via Drive, never commit
+data/**
+!data/**/
+!data/**/.gitkeep
+!data/human_eval/README.md
+
+# Outputs
+outputs/**
+!outputs/**/
+!outputs/**/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+.venv/
+venv/
+
+# Secrets / logs
+.env
+wandb/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

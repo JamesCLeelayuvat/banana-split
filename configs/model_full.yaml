@@ -1,0 +1,14 @@
+# GPU configuration (~30M trainable params)
+text_encoder:
+  name: t5-base
+  frozen: true
+d_model: 512
+chord_encoder:
+  layers: 2
+  heads: 8
+decoder:
+  layers: 6
+  heads: 8
+  ff_dim: 2048
+max_len: 512
+dropout: 0.1

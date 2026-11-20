@@ -1,0 +1,14 @@
+# CPU configuration (~5M trainable params)
+text_encoder:
+  name: sentence-transformers/all-MiniLM-L6-v2
+  frozen: true
+d_model: 256
+chord_encoder:
+  layers: 2
+  heads: 4
+decoder:
+  layers: 4
+  heads: 4
+  ff_dim: 1024
+max_len: 256
+dropout: 0.1
