@@ -7,8 +7,27 @@ import argparse
 
 
 def parse_changes(s: str, beats_per_bar: int = 4) -> list[str]:
-    """'Dm7 G7 | Cmaj7' -> one chord symbol per beat."""
-    raise NotImplementedError
+    """'Dm7 G7 | Cmaj7' -> one chord symbol per beat.
+
+    Bars are separated by '|'. The chords in a bar share its beats evenly, with any remainder
+    going to the earlier chords (3 chords in 4/4 -> 2+1+1). A bar holding only '%' repeats the
+    previous bar; an empty bar holds the previous chord.
+    """
+    beats: list[str] = []
+    prev_bar = ["NC"]
+    for bar in s.strip().strip("|").split("|"):
+        syms = bar.split()
+        if syms == ["%"]:
+            syms = prev_bar
+        elif not syms:
+            syms = [beats[-1] if beats else "NC"]
+        if len(syms) > beats_per_bar:
+            raise ValueError(f"bar {bar!r} has more chords than beats")
+        base, extra = divmod(beats_per_bar, len(syms))
+        for i, sym in enumerate(syms):
+            beats += [sym] * (base + (1 if i < extra else 0))
+        prev_bar = syms
+    return beats
 
 
 def allowed_mask(prev_tokens: list[int]):

@@ -16,3 +16,7 @@ seed: 0
 
 checkpoint_dir: outputs/checkpoints
 log: wandb                  # wandb | none
+wandb_project: jazz-solo-gen
+wandb_entity: null          # null = your default; set to a shared team to log both of you in one project
+grad_clip: 1.0
+overfit_steps: 500          # --overfit-one-batch
