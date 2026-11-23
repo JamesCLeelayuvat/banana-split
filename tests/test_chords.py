@@ -1,4 +1,7 @@
 """The chord parser must handle every symbol in the data."""
+import sqlite3
+from pathlib import Path
+
 import pytest
 
 from src.data.chords import QUALITIES, ROOTS
@@ -21,6 +24,29 @@ def test_parse_sample_symbols(symbol):
     assert out is None or (0 <= out[0] < 12 and out[1] in QUALITIES)
 
 
+WEIMAR_DB = Path(__file__).resolve().parents[1] / "data" / "raw" / "wjazzd.db"
+
+
+@pytest.mark.skipif(not WEIMAR_DB.exists(), reason="needs data/raw/wjazzd.db")
 def test_parse_every_symbol_in_data():
-    """Fill in once loaders exist: collect all symbols from Weimar (+ Filosax) and parse each."""
-    pytest.skip("needs data/raw")
+    """Every chord symbol in Weimar must parse to one of the 9 qualities (or NC).
+
+    TODO: add Filosax symbols once load_filosax exists.
+    """
+    from src.data.chords import parse
+
+    con = sqlite3.connect(WEIMAR_DB)
+    symbols = [s for (s,) in con.execute("select distinct chord from beats where chord != ''")]
+    con.close()
+    assert symbols, "no chord symbols found in the database"
+
+    failures = {}
+    for s in symbols:
+        try:
+            out = parse(s)
+        except ValueError as e:
+            failures[s] = str(e)
+            continue
+        if not (out is None or (0 <= out[0] < 12 and out[1] in QUALITIES)):
+            failures[s] = f"bad output {out}"
+    assert not failures, f"{len(failures)} unparseable symbols: {failures}"
