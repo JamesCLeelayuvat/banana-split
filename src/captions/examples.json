@@ -1,7 +1,572 @@
 [
   {
-    "phrase_id": "TODO",
-    "feature_words": {"register": "high", "density": "dense", "contour": "descending", "harmonic_fit": "chromatic"},
-    "caption": "TODO: describe the phrase the way a player would"
+    "phrase_id": "weimar_233_b000",
+    "feature_words": {
+      "register": "middle",
+      "density": "sparse",
+      "range": "narrow",
+      "intervals": "intervallic",
+      "space": "spacious",
+      "contour": "level",
+      "rhythm": "sixteenth runs",
+      "harmony": "inside",
+      "style": "post-bop",
+      "tempo": "medium-up",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_233.json --index 0 --out outputs/audio/examples/",
+    "source": "John Coltrane - So What, bar 0"
+  },
+  {
+    "phrase_id": "weimar_159_b008",
+    "feature_words": {
+      "register": "high",
+      "density": "dense",
+      "range": "wide",
+      "intervals": "stepwise",
+      "space": "busy",
+      "contour": "descending",
+      "rhythm": "triplets",
+      "harmony": "chromatic",
+      "style": "bebop",
+      "tempo": "up-tempo",
+      "instrument": "trumpet"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_159.json --index 4 --out outputs/audio/examples/",
+    "source": "Fats Navarro - Anthropology, bar 8"
+  },
+  {
+    "phrase_id": "weimar_97_b020",
+    "feature_words": {
+      "register": "low",
+      "density": "moderate",
+      "range": null,
+      "intervals": "intervallic",
+      "space": null,
+      "contour": "ascending",
+      "rhythm": "eighth notes",
+      "harmony": "outside",
+      "style": "swing",
+      "tempo": "medium tempo",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_97.json --index 10 --out outputs/audio/examples/",
+    "source": "Coleman Hawkins - It's Only a Papermoon, bar 20"
+  },
+  {
+    "phrase_id": "weimar_311_b014",
+    "feature_words": {
+      "register": "high",
+      "density": "sparse",
+      "range": "narrow",
+      "intervals": null,
+      "space": "spacious",
+      "contour": "arching",
+      "rhythm": "eighth notes",
+      "harmony": "outside",
+      "style": "fusion",
+      "tempo": "medium-slow",
+      "instrument": "trumpet"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_311.json --index 3 --out outputs/audio/examples/",
+    "source": "Miles Davis - Bitches Brew, bar 14"
+  },
+  {
+    "phrase_id": "weimar_355_b010",
+    "feature_words": {
+      "register": "low",
+      "density": "dense",
+      "range": "wide",
+      "intervals": "intervallic",
+      "space": null,
+      "contour": "descending",
+      "rhythm": "triplets",
+      "harmony": "inside",
+      "style": "hard bop",
+      "tempo": "slow",
+      "instrument": "baritone sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_355.json --index 5 --out outputs/audio/examples/",
+    "source": "Pepper Adams - Early Morning Mood, bar 10"
+  },
+  {
+    "phrase_id": "weimar_456_b014",
+    "feature_words": {
+      "register": "low",
+      "density": "sparse",
+      "range": "wide",
+      "intervals": "intervallic",
+      "space": null,
+      "contour": "ascending",
+      "rhythm": "triplets",
+      "harmony": "inside",
+      "style": "cool jazz",
+      "tempo": "up-tempo",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_456.json --index 7 --out outputs/audio/examples/",
+    "source": "Zoot Sims - Night and Day, bar 14"
+  },
+  {
+    "phrase_id": "weimar_297_b000",
+    "feature_words": {
+      "register": "high",
+      "density": "moderate",
+      "range": "wide",
+      "intervals": "intervallic",
+      "space": "spacious",
+      "contour": "arching",
+      "rhythm": "eighth notes",
+      "harmony": "chromatic",
+      "style": "traditional",
+      "tempo": "up-tempo",
+      "instrument": "cornet"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_297.json --index 0 --out outputs/audio/examples/",
+    "source": "Louis Armstrong - Once in a While, bar 0"
+  },
+  {
+    "phrase_id": "weimar_179_b082",
+    "feature_words": {
+      "register": "middle",
+      "density": "sparse",
+      "range": "narrow",
+      "intervals": "intervallic",
+      "space": null,
+      "contour": "ascending",
+      "rhythm": "eighth notes",
+      "harmony": "inside",
+      "style": "hard bop",
+      "tempo": "up-tempo",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_179.json --index 40 --out outputs/audio/examples/",
+    "source": "Hank Mobley - Lady Bird, bar 82"
+  },
+  {
+    "phrase_id": "weimar_427_b004",
+    "feature_words": {
+      "register": "low",
+      "density": "sparse",
+      "range": "narrow",
+      "intervals": "stepwise",
+      "space": null,
+      "contour": "level",
+      "rhythm": "eighth notes",
+      "harmony": null,
+      "style": "post-bop",
+      "tempo": "up-tempo",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_427.json --index 1 --out outputs/audio/examples/",
+    "source": "Wayne Shorter - Dolores, bar 4"
+  },
+  {
+    "phrase_id": "weimar_196_b030",
+    "feature_words": {
+      "register": "low",
+      "density": "sparse",
+      "range": "narrow",
+      "intervals": null,
+      "space": "spacious",
+      "contour": "descending",
+      "rhythm": "triplets",
+      "harmony": "inside",
+      "style": "hard bop",
+      "tempo": "medium tempo",
+      "instrument": "trombone"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_196.json --index 14 --out outputs/audio/examples/",
+    "source": "J.J. Johnson - Walkin', bar 30"
+  },
+  {
+    "phrase_id": "weimar_43_b188",
+    "feature_words": {
+      "register": "low",
+      "density": "dense",
+      "range": "wide",
+      "intervals": "stepwise",
+      "space": "busy",
+      "contour": "descending",
+      "rhythm": "eighth notes",
+      "harmony": "chromatic",
+      "style": "post-bop",
+      "tempo": "up-tempo",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_43.json --index 83 --out outputs/audio/examples/",
+    "source": "Branford Marsalis - U.M.M.G., bar 188"
+  },
+  {
+    "phrase_id": "weimar_279_b026",
+    "feature_words": {
+      "register": "low",
+      "density": "dense",
+      "range": null,
+      "intervals": "intervallic",
+      "space": null,
+      "contour": "level",
+      "rhythm": "eighth notes",
+      "harmony": "inside",
+      "style": "swing",
+      "tempo": "slow",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_279.json --index 13 --out outputs/audio/examples/",
+    "source": "Lester Young - Body and Soul, bar 26"
+  },
+  {
+    "phrase_id": "weimar_322_b062",
+    "feature_words": {
+      "register": "high",
+      "density": "dense",
+      "range": "narrow",
+      "intervals": null,
+      "space": "busy",
+      "contour": "descending",
+      "rhythm": "triplets",
+      "harmony": null,
+      "style": "post-bop",
+      "tempo": "up-tempo",
+      "instrument": "trumpet"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_322.json --index 31 --out outputs/audio/examples/",
+    "source": "Miles Davis - Orbits, bar 62"
+  },
+  {
+    "phrase_id": "weimar_352_b026",
+    "feature_words": {
+      "register": "middle",
+      "density": "sparse",
+      "range": "narrow",
+      "intervals": "stepwise",
+      "space": "busy",
+      "contour": "level",
+      "rhythm": "eighth notes",
+      "harmony": "inside",
+      "style": "cool jazz",
+      "tempo": "medium-up",
+      "instrument": "alto sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_352.json --index 13 --out outputs/audio/examples/",
+    "source": "Paul Desmond - Samba Cantina, bar 26"
+  },
+  {
+    "phrase_id": "weimar_388_b022",
+    "feature_words": {
+      "register": "low",
+      "density": "moderate",
+      "range": null,
+      "intervals": "intervallic",
+      "space": "busy",
+      "contour": "ascending",
+      "rhythm": "eighth notes",
+      "harmony": "inside",
+      "style": "post-bop",
+      "tempo": "up-tempo",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_388.json --index 11 --out outputs/audio/examples/",
+    "source": "Sonny Rollins - The Everywhere Calypso, bar 22"
+  },
+  {
+    "phrase_id": "weimar_208_b030",
+    "feature_words": {
+      "register": "middle",
+      "density": "dense",
+      "range": "wide",
+      "intervals": "intervallic",
+      "space": "busy",
+      "contour": "arching",
+      "rhythm": "triplets",
+      "harmony": "inside",
+      "style": "post-bop",
+      "tempo": "slow",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_208.json --index 15 --out outputs/audio/examples/",
+    "source": "Joe Lovano - Central Park West, bar 30"
+  },
+  {
+    "phrase_id": "weimar_360_b000",
+    "feature_words": {
+      "register": "middle",
+      "density": "sparse",
+      "range": null,
+      "intervals": null,
+      "space": null,
+      "contour": "arching",
+      "rhythm": "eighth notes",
+      "harmony": "inside",
+      "style": "bebop",
+      "tempo": "up-tempo",
+      "instrument": "alto sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_360.json --index 0 --out outputs/audio/examples/",
+    "source": "Phil Woods - Cotton Tail, bar 0"
+  },
+  {
+    "phrase_id": "weimar_280_b032",
+    "feature_words": {
+      "register": "low",
+      "density": "sparse",
+      "range": "narrow",
+      "intervals": "stepwise",
+      "space": "spacious",
+      "contour": "ascending",
+      "rhythm": "triplets",
+      "harmony": "outside",
+      "style": "swing",
+      "tempo": "medium-up",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_280.json --index 16 --out outputs/audio/examples/",
+    "source": "Lester Young - D.B. Blues, bar 32"
+  },
+  {
+    "phrase_id": "weimar_121_b082",
+    "feature_words": {
+      "register": "middle",
+      "density": "moderate",
+      "range": "narrow",
+      "intervals": "intervallic",
+      "space": null,
+      "contour": "level",
+      "rhythm": "eighth notes",
+      "harmony": "inside",
+      "style": "hard bop",
+      "tempo": "up-tempo",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_121.json --index 41 --out outputs/audio/examples/",
+    "source": "Dexter Gordon - Cheese Cake, bar 82"
+  },
+  {
+    "phrase_id": "weimar_360_b018",
+    "feature_words": {
+      "register": "low",
+      "density": "moderate",
+      "range": null,
+      "intervals": "intervallic",
+      "space": "busy",
+      "contour": "level",
+      "rhythm": "eighth notes",
+      "harmony": "outside",
+      "style": "bebop",
+      "tempo": "up-tempo",
+      "instrument": "alto sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_360.json --index 9 --out outputs/audio/examples/",
+    "source": "Phil Woods - Cotton Tail, bar 18"
+  },
+  {
+    "phrase_id": "weimar_320_b020",
+    "feature_words": {
+      "register": "high",
+      "density": "sparse",
+      "range": "narrow",
+      "intervals": "stepwise",
+      "space": "spacious",
+      "contour": "descending",
+      "rhythm": "triplets",
+      "harmony": "inside",
+      "style": "hard bop",
+      "tempo": "up-tempo",
+      "instrument": "trumpet"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_320.json --index 9 --out outputs/audio/examples/",
+    "source": "Miles Davis - Oleo, bar 20"
+  },
+  {
+    "phrase_id": "weimar_253_b078",
+    "feature_words": {
+      "register": "high",
+      "density": "moderate",
+      "range": "wide",
+      "intervals": null,
+      "space": "spacious",
+      "contour": "level",
+      "rhythm": "eighth notes",
+      "harmony": "chromatic",
+      "style": "hard bop",
+      "tempo": "medium-up",
+      "instrument": "trumpet"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_253.json --index 39 --out outputs/audio/examples/",
+    "source": "Kenny Dorham - Prince Albert, bar 78"
+  },
+  {
+    "phrase_id": "weimar_226_b126",
+    "feature_words": {
+      "register": "middle",
+      "density": "moderate",
+      "range": null,
+      "intervals": "stepwise",
+      "space": "busy",
+      "contour": "ascending",
+      "rhythm": "eighth notes",
+      "harmony": "inside",
+      "style": "hard bop",
+      "tempo": "up-tempo",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_226.json --index 63 --out outputs/audio/examples/",
+    "source": "John Coltrane - Mr. P.C., bar 126"
+  },
+  {
+    "phrase_id": "weimar_280_b014",
+    "feature_words": {
+      "register": "low",
+      "density": "moderate",
+      "range": "narrow",
+      "intervals": "stepwise",
+      "space": "busy",
+      "contour": "descending",
+      "rhythm": "sixteenth runs",
+      "harmony": "inside",
+      "style": "swing",
+      "tempo": "medium-up",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_280.json --index 7 --out outputs/audio/examples/",
+    "source": "Lester Young - D.B. Blues, bar 14"
+  },
+  {
+    "phrase_id": "weimar_251_b056",
+    "feature_words": {
+      "register": "middle",
+      "density": "sparse",
+      "range": null,
+      "intervals": "intervallic",
+      "space": "spacious",
+      "contour": "ascending",
+      "rhythm": "eighth notes",
+      "harmony": "inside",
+      "style": "post-bop",
+      "tempo": "up-tempo",
+      "instrument": "trumpet"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_251.json --index 28 --out outputs/audio/examples/",
+    "source": "Kenny Dorham - In 'n Out, bar 56"
+  },
+  {
+    "phrase_id": "weimar_185_b016",
+    "feature_words": {
+      "register": "low",
+      "density": "dense",
+      "range": null,
+      "intervals": "stepwise",
+      "space": "busy",
+      "contour": "descending",
+      "rhythm": "sixteenth runs",
+      "harmony": null,
+      "style": "post-bop",
+      "tempo": "up-tempo",
+      "instrument": "piano"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_185.json --index 7 --out outputs/audio/examples/",
+    "source": "Herbie Hancock - Dolores, bar 16"
+  },
+  {
+    "phrase_id": "weimar_130_b010",
+    "feature_words": {
+      "register": "low",
+      "density": "sparse",
+      "range": "narrow",
+      "intervals": "stepwise",
+      "space": null,
+      "contour": "arching",
+      "rhythm": "eighth notes",
+      "harmony": "inside",
+      "style": "swing",
+      "tempo": "up-tempo",
+      "instrument": "trombone"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_130.json --index 4 --out outputs/audio/examples/",
+    "source": "Dickie Wells - I Got Rhythm, bar 10"
+  },
+  {
+    "phrase_id": "weimar_378_b022",
+    "feature_words": {
+      "register": "middle",
+      "density": "sparse",
+      "range": "narrow",
+      "intervals": "stepwise",
+      "space": "spacious",
+      "contour": "level",
+      "rhythm": "triplets",
+      "harmony": "chromatic",
+      "style": "hard bop",
+      "tempo": "up-tempo",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_378.json --index 11 --out outputs/audio/examples/",
+    "source": "Sonny Rollins - Airegin, bar 22"
+  },
+  {
+    "phrase_id": "weimar_399_b184",
+    "feature_words": {
+      "register": "low",
+      "density": "sparse",
+      "range": "narrow",
+      "intervals": "stepwise",
+      "space": "busy",
+      "contour": "level",
+      "rhythm": "eighth notes",
+      "harmony": "inside",
+      "style": "cool jazz",
+      "tempo": "up-tempo",
+      "instrument": "tenor sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_399.json --index 83 --out outputs/audio/examples/",
+    "source": "Stan Getz - Crazy Rhythm, bar 184"
+  },
+  {
+    "phrase_id": "weimar_10_b092",
+    "feature_words": {
+      "register": "middle",
+      "density": "moderate",
+      "range": "narrow",
+      "intervals": "intervallic",
+      "space": "spacious",
+      "contour": "level",
+      "rhythm": "sixteenth runs",
+      "harmony": "chromatic",
+      "style": "swing",
+      "tempo": "up-tempo",
+      "instrument": "alto sax"
+    },
+    "caption": "",
+    "listen": "python -m src.render data/phrases/weimar_10.json --index 46 --out outputs/audio/examples/",
+    "source": "Benny Carter - Just Friends, bar 92"
   }
 ]

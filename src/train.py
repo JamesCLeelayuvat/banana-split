@@ -22,6 +22,7 @@ import torch
 import yaml
 from torch.utils.data import DataLoader
 
+from src.captions.features import load_bins
 from src.data.dataset import PhraseDataset, collate, load_captions
 from src.data.phrases import load_phrases
 from src.model.solo_model import SoloModel
@@ -133,17 +134,18 @@ def main():
     # ---- data
     with open(ROOT / "configs" / "data.yaml") as f:
         data_cfg = yaml.safe_load(f)
-    captions = None
+    captions = register_bins = None
     if cond == "full":
         cap_path = ROOT / data_cfg["paths"]["captions"]
         if not cap_path.exists():
             raise FileNotFoundError(f"conditioning=full needs captions at {cap_path} (H2)")
         captions = load_captions(cap_path)
+        register_bins = load_bins()  # keep register captions true under transposition
     max_len = model_cfg["max_len"] + 1  # +1: the model sees L-1 tokens after the shift
     train_set = PhraseDataset(load_phrases("train"), max_len,
                               transpose=(data_cfg["transpose"]["min"], data_cfg["transpose"]["max"]),
                               captions=captions, caption_dropout=cfg["caption_dropout"],
-                              seed=cfg["seed"])
+                              seed=cfg["seed"], register_bins=register_bins)
     val_set = PhraseDataset(load_phrases("val"), max_len, captions=captions, random_caption=False)
     bs = cfg["batch_size"]
     gen = torch.Generator().manual_seed(cfg["seed"])

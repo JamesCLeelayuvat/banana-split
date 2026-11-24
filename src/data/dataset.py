@@ -68,15 +68,26 @@ class PhraseDataset(Dataset):
     (evaluation, so val loss is comparable across epochs). Either is replaced by "" with
     probability caption_dropout. Phrases longer
     than max_len tokens are dropped (count in .n_dropped).
+
+    register_bins (src.captions.features.load_bins()) limits each phrase's shifts to those that
+    keep its register word, so a caption saying "high register" stays true after transposition.
+    Pass it whenever captions are used with transpose.
     """
 
     def __init__(self, phrases: list[dict], max_len: int, transpose: tuple[int, int] | None = None,
                  captions: dict[str, list[str]] | None = None, caption_dropout: float = 0.0,
-                 random_caption: bool = True, seed: int = 0):
+                 random_caption: bool = True, seed: int = 0, register_bins: dict | None = None):
         lengths = [len(remi.encode(p)) for p in phrases]  # transposition doesn't change length
         self.phrases = [p for p, n in zip(phrases, lengths) if n <= max_len]
         self.n_dropped = len(phrases) - len(self.phrases)
         self.transpose = transpose
+        self.shifts = None
+        if transpose is not None:
+            if register_bins is not None:
+                from src.captions.features import allowed_shifts
+                self.shifts = [allowed_shifts(p, register_bins, *transpose) for p in self.phrases]
+            else:
+                self.shifts = [list(range(transpose[0], transpose[1] + 1))] * len(self.phrases)
         self.captions = captions
         self.caption_dropout = caption_dropout
         self.random_caption = random_caption
@@ -91,8 +102,8 @@ class PhraseDataset(Dataset):
 
     def __getitem__(self, i: int) -> dict:
         phrase = self.phrases[i]
-        if self.transpose is not None:
-            shifted = transpose_phrase(phrase, self.rng.randint(*self.transpose))
+        if self.shifts is not None:
+            shifted = transpose_phrase(phrase, self.rng.choice(self.shifts[i]))
             phrase = shifted if shifted is not None else phrase
         caption = ""
         if self.captions is not None and self.rng.random() >= self.caption_dropout:

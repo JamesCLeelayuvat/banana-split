@@ -13,9 +13,12 @@ Beat 0 is the downbeat of the solo's first bar, so bar b starts at beat 4*b. If 
 starts mid-bar (a pickup), the missing beats before it are padded with "NC" chords.
 
 How the database is turned into that:
-- Onsets/durations in the `melody` table are in seconds. They are mapped to beats by linear
-  interpolation on the solo's beat grid (`beats` table), so tempo drift is absorbed; the note
-  end is mapped the same way and dur = end - onset.
+- Onsets come from the annotated metrical position, not the performed time: a note on
+  (bar, beat, tatum) of a beat split into `division` tatums sits at
+  beat_index + (tatum - 1) / division. This drops micro-timing (swing ratio, laying back), so
+  onsets land on the grid the transcriber heard (8ths, 16ths, triplets, ...).
+- Durations are performed lengths: the note's start and end in seconds are mapped to beats by
+  linear interpolation on the beat grid (`beats` table), and dur = end - start.
 - Chords in `beats` are only written where they change; they're forward-filled to every beat.
   Beats before the first chord are "NC". Symbols are left raw for src/data/chords.parse().
 - Only solos in regular 4/4 are kept: every bar except the first and last must have 4 beats.
@@ -63,6 +66,7 @@ def _load_solo(conn: sqlite3.Connection, melid: int, info: dict) -> dict | None:
 
     grid = [r[0] for r in beat_rows]
     offset = beat_rows[0][2] - 1  # pad a pickup so beat 0 is a downbeat
+    beat_index = {(bar, beat): offset + i for i, (_, bar, beat, _) in enumerate(beat_rows)}
 
     chords = [NO_CHORD] * offset
     current = NO_CHORD
@@ -72,12 +76,15 @@ def _load_solo(conn: sqlite3.Connection, melid: int, info: dict) -> dict | None:
         chords.append(current)
 
     notes = []
-    for onset, pitch, dur in conn.execute(
-        "SELECT onset, pitch, duration FROM melody WHERE melid = ? ORDER BY onset", (melid,)
+    for onset, pitch, dur, bar, beat, tatum, division in conn.execute(
+        "SELECT onset, pitch, duration, bar, beat, tatum, division FROM melody "
+        "WHERE melid = ? ORDER BY onset", (melid,)
     ):
-        start = _seconds_to_beats(onset, grid, offset)
-        end = _seconds_to_beats(onset + dur, grid, offset)
-        notes.append({"pitch": int(round(pitch)), "onset": start, "dur": end - start})
+        if (bar, beat) not in beat_index:
+            return None  # note outside the beat grid; can't place it metrically
+        length = _seconds_to_beats(onset + dur, grid, offset) - _seconds_to_beats(onset, grid, offset)
+        start = beat_index[(bar, beat)] + (tatum - 1) / division
+        notes.append({"pitch": int(round(pitch)), "onset": start, "dur": length})
     notes.sort(key=lambda n: (n["onset"], n["pitch"]))
 
     return {"solo_id": f"weimar_{melid}", "notes": notes, "chords": chords, "meta": info}
