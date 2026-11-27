@@ -9,7 +9,9 @@ Steps (python -m src.captions.caption_llm <command>):
                    empty "caption" for you to fill in (listen with the render command shown)
     try            caption a few phrases right away and print them, to check the prompt
     submit         send every phrase that has no caption yet to the Gemini Batch API
-                   (50% price, usually done within a few hours); batch ids go to batches.json
+                   (50% price, usually done within a few hours); batch ids go to batches.json.
+                   Jobs are sized to fit the account's limit on tokens in active batches; when
+                   it is full, submit waits, collects whatever has finished, and continues
     collect        wait for the submitted batches and append their captions to captions.jsonl
 
 Re-running submit only sends phrases still missing from captions.jsonl, so a phrase whose
@@ -36,7 +38,9 @@ MODEL = "gemini-3.8-flash"
 THINKING = "LOW"          # paraphrasing a handful of given words; little reasoning needed
 MAX_TOKENS = 4096         # captions themselves are ~100 tokens
 N_CAPTIONS = 3
-BATCH_CHUNK = 5000        # requests per batch job (smaller is easier to retry)
+MAX_ACTIVE_TOKENS = 2_500_000  # input tokens per batch job: under the 3M limit on tokens in
+                               # active batch jobs (Tier 1); raise with --max-active-tokens
+POLL_SECONDS = 60
 
 # Order in which features are shown to the model (fixed, so prompts are deterministic).
 FEATURE_ORDER = ("register", "density", "contour", "rhythm", "harmony", "range", "intervals",
@@ -311,9 +315,13 @@ def cmd_submit(args) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     state_path = out_path.parent / "batches.json"
     state = json.loads(state_path.read_text()) if state_path.exists() else []
+    chunk_size = max(1, args.max_active_tokens // n_in)
+    n_chunks = -(-len(todo) // chunk_size)
+    print(f"{n_chunks} batch job(s) of up to {chunk_size} phrases "
+          f"(~{chunk_size * n_in / 1e6:.1f}M tokens each)")
     stamp = time.strftime("%Y%m%d-%H%M%S")
-    for i, start in enumerate(range(0, len(todo), BATCH_CHUNK)):
-        chunk = todo[start:start + BATCH_CHUNK]
+    for i, start in enumerate(range(0, len(todo), chunk_size)):
+        chunk = todo[start:start + chunk_size]
         src_path = out_path.parent / f"batch_input_{stamp}_{i}.jsonl"
         with open(src_path, "w", encoding="utf-8") as f:
             for pid in chunk:
@@ -321,13 +329,38 @@ def cmd_submit(args) -> None:
                                     "request": request_body(feats[pid]["words"], system)}) + "\n")
         uploaded = client.files.upload(file=src_path, config=types.UploadFileConfig(
             display_name=src_path.stem, mime_type="jsonl"))
-        batch = client.batches.create(model=args.model, src=uploaded.name,
-                                      config={"display_name": f"captions-{stamp}-{i}"})
+        batch = create_when_room(client, args.model, uploaded.name, f"captions-{stamp}-{i}",
+                                 state, state_path, out_path)
         state.append({"id": batch.name, "n": len(chunk), "model": args.model,
                       "collected": False})
         state_path.write_text(json.dumps(state, indent=2))
-        print(f"submitted {batch.name} ({len(chunk)} phrases)")
-    print(f"batch ids in {state_path}; run `collect` to fetch results")
+        src_path.unlink()
+        print(f"submitted {batch.name} ({len(chunk)} phrases, job {i + 1}/{n_chunks})")
+    print(f"batch ids in {state_path}; run `collect --wait` to fetch the rest")
+
+
+def _is_quota_error(e: Exception) -> bool:
+    return getattr(e, "code", None) == 429 or "RESOURCE_EXHAUSTED" in str(e)
+
+
+def create_when_room(client, model: str, src: str, name: str, state: list, state_path: Path,
+                     out_path: Path):
+    """Create a batch job, waiting (and collecting finished jobs) while the account's
+    active-batch token limit is full."""
+    from google.genai import errors
+
+    while True:
+        try:
+            return client.batches.create(model=model, src=src, config={"display_name": name})
+        except errors.ClientError as e:
+            if not _is_quota_error(e):
+                raise
+            if not collect_finished(client, state, state_path, out_path):
+                raise SystemExit(f"quota error with no batch jobs running, so one job is too big "
+                                 f"for the limit: lower --max-active-tokens\n{e}")
+            print(f"  active-batch limit full; waiting for a running job "
+                  f"(checking every {POLL_SECONDS}s)")
+            time.sleep(POLL_SECONDS)
 
 
 def write_results(raw: bytes, out_path: Path) -> tuple[int, dict]:
@@ -354,6 +387,30 @@ def write_results(raw: bytes, out_path: Path) -> tuple[int, dict]:
     return ok, failed
 
 
+def collect_finished(client, state: list, state_path: Path, out_path: Path) -> list[str]:
+    """Write the results of every finished, uncollected batch job; return the ids of jobs still
+    running."""
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    running = []
+    for entry in [e for e in state if not e["collected"]]:
+        if not entry["id"].startswith("batches/"):
+            continue  # left over from the old setup
+        batch = client.batches.get(name=entry["id"])
+        if batch.state.name not in DONE_STATES | FAILED_STATES:
+            running.append(entry["id"])
+            continue
+        if batch.state.name in FAILED_STATES:
+            print(f"{entry['id']}: {batch.state.name}"
+                  + (f" ({batch.error.message})" if batch.error else "")
+                  + "; its phrases will be resent by the next submit")
+        else:
+            ok, failed = write_results(client.files.download(file=batch.dest.file_name), out_path)
+            print(f"{entry['id']}: {ok} captioned" + (f", failed: {failed}" if failed else ""))
+        entry["collected"] = True
+        state_path.write_text(json.dumps(state, indent=2))
+    return running
+
+
 def cmd_collect(args) -> None:
     out_path = _paths()["captions"]
     state_path = out_path.parent / "batches.json"
@@ -361,32 +418,12 @@ def cmd_collect(args) -> None:
         sys.exit(f"no {state_path}: nothing submitted yet")
     state = json.loads(state_path.read_text())
     client = make_client()
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    for entry in [e for e in state if not e["collected"]]:
-        if not entry["id"].startswith("batches/"):
-            print(f"{entry['id']}: not a Gemini batch (left over from the old setup); skipping")
-            continue
-        while (batch := client.batches.get(name=entry["id"])).state.name not in (
-                DONE_STATES | FAILED_STATES):
-            if not args.wait:
-                print(f"{entry['id']}: {batch.state.name}")
-                break
-            time.sleep(60)
-        else:
-            if batch.state.name in FAILED_STATES:
-                print(f"{entry['id']}: {batch.state.name}"
-                      + (f" ({batch.error.message})" if batch.error else "")
-                      + "; its phrases will be resent by the next submit")
-            else:
-                ok, failed = write_results(client.files.download(file=batch.dest.file_name),
-                                           out_path)
-                print(f"{entry['id']}: {ok} captioned" + (f", failed: {failed}" if failed else ""))
-            entry["collected"] = True
-            state_path.write_text(json.dumps(state, indent=2))
-    remaining = [e["id"] for e in state
-                 if not e["collected"] and e["id"].startswith("batches/")]
-    if remaining:
-        print(f"{len(remaining)} batch(es) not finished; run collect again (or with --wait)")
+    while (running := collect_finished(client, state, state_path, out_path)) and args.wait:
+        time.sleep(POLL_SECONDS)
+    if running:
+        for job in running:
+            print(f"{job}: still running")
+        print(f"{len(running)} batch(es) not finished; run collect again (or with --wait)")
     else:
         print(f"all batches collected -> {out_path}; re-run submit to retry any failures")
 
@@ -414,6 +451,8 @@ def main() -> None:
     p.add_argument("--model", default=MODEL)
     p.add_argument("--yes", action="store_true", help="actually submit (otherwise just estimate)")
     p.add_argument("--no-examples", action="store_true", help="allow submitting without examples")
+    p.add_argument("--max-active-tokens", type=int, default=MAX_ACTIVE_TOKENS,
+                   help="input tokens per batch job (keep under your tier's active-batch limit)")
     p.set_defaults(func=cmd_submit)
 
     p = sub.add_parser("collect", help="fetch finished batches into captions.jsonl")

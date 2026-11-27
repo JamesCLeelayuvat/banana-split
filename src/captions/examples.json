@@ -52,7 +52,7 @@
       "tempo": "medium tempo",
       "instrument": "tenor sax"
     },
-    "caption": "outside harmony, slow and arpeggiated.",
+    "caption": "outside harmony, medium tempo and arpeggiated.",
     "listen": "python -m src.render data/phrases/weimar_97.json --index 10 --out outputs/audio/examples/",
     "source": "Coleman Hawkins - It's Only a Papermoon, bar 20"
   },
@@ -71,7 +71,7 @@
       "tempo": "medium-slow",
       "instrument": "trumpet"
     },
-    "caption": "pointillistic and fragmented, large range",
+    "caption": "pointillistic and fragmented, small range",
     "listen": "python -m src.render data/phrases/weimar_311.json --index 3 --out outputs/audio/examples/",
     "source": "Miles Davis - Bitches Brew, bar 14"
   },
@@ -84,7 +84,7 @@
       "intervals": "intervallic",
       "space": null,
       "contour": "descending",
-      "rhythm": "eighth notes",
+      "rhythm": "triplets",
       "harmony": "inside",
       "style": "hard bop",
       "tempo": "slow",
@@ -103,13 +103,13 @@
       "intervals": "intervallic",
       "space": null,
       "contour": "ascending",
-      "rhythm": "eighth notes",
+      "rhythm": "triplets",
       "harmony": "inside",
       "style": "cool jazz",
       "tempo": "up-tempo",
       "instrument": "tenor sax"
     },
-    "caption": "separated ideas, plays with octave transpositions.",
+    "caption": "separated ideas, large leaps",
     "listen": "python -m src.render data/phrases/weimar_456.json --index 7 --out outputs/audio/examples/",
     "source": "Zoot Sims - Night and Day, bar 14"
   },
@@ -166,7 +166,7 @@
       "tempo": "up-tempo",
       "instrument": "tenor sax"
     },
-    "caption": "repetitive and narrow in range. almost continuous",
+    "caption": "repetitive and narrow in range. not continuous",
     "listen": "python -m src.render data/phrases/weimar_427.json --index 1 --out outputs/audio/examples/",
     "source": "Wayne Shorter - Dolores, bar 4"
   },
@@ -185,7 +185,7 @@
       "tempo": "medium tempo",
       "instrument": "trombone"
     },
-    "caption": "",
+    "caption": "lots of space, line going down, swinging triplets.",
     "listen": "python -m src.render data/phrases/weimar_196.json --index 14 --out outputs/audio/examples/",
     "source": "J.J. Johnson - Walkin', bar 30"
   },
@@ -204,7 +204,7 @@
       "tempo": "up-tempo",
       "instrument": "tenor sax"
     },
-    "caption": "",
+    "caption": "super angular hovering line, very chromatic.",
     "listen": "python -m src.render data/phrases/weimar_43.json --index 83 --out outputs/audio/examples/",
     "source": "Branford Marsalis - U.M.M.G., bar 188"
   },
@@ -223,7 +223,7 @@
       "tempo": "slow",
       "instrument": "tenor sax"
     },
-    "caption": "",
+    "caption": "following the changes, chord tone melody.",
     "listen": "python -m src.render data/phrases/weimar_279.json --index 13 --out outputs/audio/examples/",
     "source": "Lester Young - Body and Soul, bar 26"
   },
@@ -236,7 +236,7 @@
       "intervals": null,
       "space": "busy",
       "contour": "descending",
-      "rhythm": "eighth notes",
+      "rhythm": "triplets",
       "harmony": null,
       "style": "post-bop",
       "tempo": "up-tempo",
@@ -331,7 +331,7 @@
       "intervals": "stepwise",
       "space": "spacious",
       "contour": "ascending",
-      "rhythm": "eighth notes",
+      "rhythm": "triplets",
       "harmony": "outside",
       "style": "swing",
       "tempo": "medium-up",
@@ -388,7 +388,7 @@
       "intervals": "stepwise",
       "space": "spacious",
       "contour": "descending",
-      "rhythm": "eighth notes",
+      "rhythm": "triplets",
       "harmony": "inside",
       "style": "hard bop",
       "tempo": "up-tempo",
@@ -521,7 +521,7 @@
       "intervals": "stepwise",
       "space": "spacious",
       "contour": "level",
-      "rhythm": "eighth notes",
+      "rhythm": "triplets",
       "harmony": "chromatic",
       "style": "hard bop",
       "tempo": "up-tempo",

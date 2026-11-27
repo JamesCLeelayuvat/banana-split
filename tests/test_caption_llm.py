@@ -93,3 +93,48 @@ def test_write_results_appends_good_rows_and_counts_failures(tmp_path):
     ok, failed = C.write_results(raw, out)
     assert ok == 1 and sum(failed.values()) == 2
     assert C.load_done(out) == {"old", "p1"}
+
+
+def test_create_when_room_waits_out_quota_errors(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from google.genai import errors
+
+    quota = errors.ClientError(429, {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED",
+                                              "message": "active batch tokens"}})
+    attempts, polls = [], []
+
+    class Batches:
+        def create(self, model, src, config):
+            attempts.append(src)
+            if len(attempts) < 3:
+                raise quota
+            return SimpleNamespace(name="batches/new")
+
+        def get(self, name):
+            polls.append(name)
+            return SimpleNamespace(state=SimpleNamespace(name="JOB_STATE_RUNNING"))
+
+    client = SimpleNamespace(batches=Batches())
+    monkeypatch.setattr(C.time, "sleep", lambda s: None)
+    state = [{"id": "batches/old", "n": 1, "model": "m", "collected": False}]
+    batch = C.create_when_room(client, "m", "files/x", "name", state, tmp_path / "b.json",
+                               tmp_path / "c.jsonl")
+    assert batch.name == "batches/new" and len(attempts) == 3 and polls == ["batches/old"] * 2
+
+
+def test_create_when_room_gives_up_when_nothing_is_running(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    import pytest
+    from google.genai import errors
+
+    class Batches:
+        def create(self, model, src, config):
+            raise errors.ClientError(429, {"error": {"code": 429, "status": "RESOURCE_EXHAUSTED",
+                                                     "message": "too big"}})
+
+    monkeypatch.setattr(C.time, "sleep", lambda s: None)
+    with pytest.raises(SystemExit, match="max-active-tokens"):
+        C.create_when_room(SimpleNamespace(batches=Batches()), "m", "f", "n", [],
+                           tmp_path / "b.json", tmp_path / "c.jsonl")
