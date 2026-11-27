@@ -14,7 +14,7 @@
       "tempo": "medium-up",
       "instrument": "tenor sax"
     },
-    "caption": "",
+    "caption": "restrictive and regular melody, fragmented",
     "listen": "python -m src.render data/phrases/weimar_233.json --index 0 --out outputs/audio/examples/",
     "source": "John Coltrane - So What, bar 0"
   },
@@ -33,7 +33,7 @@
       "tempo": "up-tempo",
       "instrument": "trumpet"
     },
-    "caption": "",
+    "caption": "swinging fast descending lines with chromatic enclosures.",
     "listen": "python -m src.render data/phrases/weimar_159.json --index 4 --out outputs/audio/examples/",
     "source": "Fats Navarro - Anthropology, bar 8"
   },
@@ -52,7 +52,7 @@
       "tempo": "medium tempo",
       "instrument": "tenor sax"
     },
-    "caption": "",
+    "caption": "outside harmony, slow and arpeggiated.",
     "listen": "python -m src.render data/phrases/weimar_97.json --index 10 --out outputs/audio/examples/",
     "source": "Coleman Hawkins - It's Only a Papermoon, bar 20"
   },
@@ -71,7 +71,7 @@
       "tempo": "medium-slow",
       "instrument": "trumpet"
     },
-    "caption": "",
+    "caption": "pointillistic and fragmented, large range",
     "listen": "python -m src.render data/phrases/weimar_311.json --index 3 --out outputs/audio/examples/",
     "source": "Miles Davis - Bitches Brew, bar 14"
   },
@@ -84,13 +84,13 @@
       "intervals": "intervallic",
       "space": null,
       "contour": "descending",
-      "rhythm": "triplets",
+      "rhythm": "eighth notes",
       "harmony": "inside",
       "style": "hard bop",
       "tempo": "slow",
       "instrument": "baritone sax"
     },
-    "caption": "",
+    "caption": "wandering and descending line, jumpy",
     "listen": "python -m src.render data/phrases/weimar_355.json --index 5 --out outputs/audio/examples/",
     "source": "Pepper Adams - Early Morning Mood, bar 10"
   },
@@ -103,13 +103,13 @@
       "intervals": "intervallic",
       "space": null,
       "contour": "ascending",
-      "rhythm": "triplets",
+      "rhythm": "eighth notes",
       "harmony": "inside",
       "style": "cool jazz",
       "tempo": "up-tempo",
       "instrument": "tenor sax"
     },
-    "caption": "",
+    "caption": "separated ideas, plays with octave transpositions.",
     "listen": "python -m src.render data/phrases/weimar_456.json --index 7 --out outputs/audio/examples/",
     "source": "Zoot Sims - Night and Day, bar 14"
   },
@@ -128,7 +128,7 @@
       "tempo": "up-tempo",
       "instrument": "cornet"
     },
-    "caption": "",
+    "caption": "approach notes to chord tones, allow room to breathe.",
     "listen": "python -m src.render data/phrases/weimar_297.json --index 0 --out outputs/audio/examples/",
     "source": "Louis Armstrong - Once in a While, bar 0"
   },
@@ -147,7 +147,7 @@
       "tempo": "up-tempo",
       "instrument": "tenor sax"
     },
-    "caption": "",
+    "caption": "hard bop line going up",
     "listen": "python -m src.render data/phrases/weimar_179.json --index 40 --out outputs/audio/examples/",
     "source": "Hank Mobley - Lady Bird, bar 82"
   },
@@ -166,7 +166,7 @@
       "tempo": "up-tempo",
       "instrument": "tenor sax"
     },
-    "caption": "",
+    "caption": "repetitive and narrow in range. almost continuous",
     "listen": "python -m src.render data/phrases/weimar_427.json --index 1 --out outputs/audio/examples/",
     "source": "Wayne Shorter - Dolores, bar 4"
   },
@@ -236,7 +236,7 @@
       "intervals": null,
       "space": "busy",
       "contour": "descending",
-      "rhythm": "triplets",
+      "rhythm": "eighth notes",
       "harmony": null,
       "style": "post-bop",
       "tempo": "up-tempo",
@@ -331,7 +331,7 @@
       "intervals": "stepwise",
       "space": "spacious",
       "contour": "ascending",
-      "rhythm": "triplets",
+      "rhythm": "eighth notes",
       "harmony": "outside",
       "style": "swing",
       "tempo": "medium-up",
@@ -388,7 +388,7 @@
       "intervals": "stepwise",
       "space": "spacious",
       "contour": "descending",
-      "rhythm": "triplets",
+      "rhythm": "eighth notes",
       "harmony": "inside",
       "style": "hard bop",
       "tempo": "up-tempo",
@@ -521,7 +521,7 @@
       "intervals": "stepwise",
       "space": "spacious",
       "contour": "level",
-      "rhythm": "triplets",
+      "rhythm": "eighth notes",
       "harmony": "chromatic",
       "style": "hard bop",
       "tempo": "up-tempo",

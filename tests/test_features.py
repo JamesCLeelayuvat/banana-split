@@ -35,6 +35,21 @@ def test_rhythm_shares():
     assert F.rhythm_shares(p) == (pytest.approx(0.25), pytest.approx(0.5))
 
 
+def test_swung_eighths_are_not_triplets():
+    # Beat 0: {0, 8} long-short pair; beat 1: lone 8; beat 2: {0, 4}; beat 3: full triplet.
+    p = phrase([60] * 8, onsets=[0, 8, 20, 24, 28, 36, 40, 44], dur=1)
+    assert F.triplet_onsets(p) == 3  # tick 4 in beat 2, ticks 4 and 8 in beat 3
+
+
+def test_triplets_word_needs_enough_triplet_notes():
+    bins = {k: [0.0, 0.0] for k in F.BINNED}
+    few = F.compute_features(phrase([60, 62, 64, 65], onsets=[0, 4, 12, 24], dur=1))
+    assert few["triplet_share"] > few["sixteenth_share"]
+    assert F.to_words(few, bins)["rhythm"] != "triplets"  # only one triplet onset
+    many = F.compute_features(phrase([60] * 6, onsets=[0, 4, 8, 12, 16, 20], dur=1))
+    assert F.to_words(many, bins)["rhythm"] == "triplets"
+
+
 def test_harmony():
     # Over C7: E on beat 0 (chord tone), Db -> C (chromatic approach), F# leaping away (in
     # C7's scale: #11), Ab -> D (outside: not in mixolydian+#11, doesn't resolve by half step).

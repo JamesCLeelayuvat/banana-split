@@ -10,7 +10,9 @@ Numeric features (compute_features):
     slope           least-squares pitch slope, semitones per bar                 -> contour
     arch            middle third of the notes minus the higher outer third, semitones -> contour
     sixteenth_share share of onsets on the 2nd/4th 16th of a beat (ticks 3, 9)   -> rhythm
-    triplet_share   share of onsets on the 2nd/3rd triplet of a beat (ticks 4, 8) -> rhythm
+    triplet_share   share of onsets on a triplet partial: tick 4, or tick 8 when the same beat
+                    also has a tick-4 onset (a lone 8 is read as a swung eighth)   -> rhythm
+    triplet_notes   count of those onsets; "triplets" needs at least MIN_TRIPLET_NOTES
     mean_interval   mean |interval| between consecutive notes, semitones        -> intervals
     rest_fraction   share of the phrase's ticks with no note sounding            -> space
     chord_tone_rate share of on-beat notes that are tones of the beat's chord    -> harmony
@@ -66,6 +68,7 @@ WORDS = {
 BINNED = ("mean_pitch", "density", "range", "mean_interval", "rest_fraction", "slope",
           "sixteenth_share", "triplet_share", "chromatic_rate", "outside_rate")
 ARCH_SEMITONES = 3.0  # the middle third must sit this far above the higher outer third
+MIN_TRIPLET_NOTES = 3  # fewer triplet onsets than this never makes a phrase "triplets"
 
 STYLE = {"POSTBOP": "post-bop", "HARDBOP": "hard bop", "COOL": "cool jazz", "SWING": "swing",
          "BEBOP": "bebop", "FUSION": "fusion", "TRADITIONAL": "traditional"}
@@ -110,10 +113,21 @@ def contour(phrase: dict) -> tuple[float, float]:
     return slope, float(middle.mean() - max(first.mean(), last.mean()))
 
 
+def triplet_onsets(phrase: dict) -> int:
+    """Onsets on a triplet partial: tick 4 of a beat, or tick 8 when that beat also has a
+    tick-4 onset. A tick-8 onset without one ({0, 8} or a lone 8) is the swung off-beat eighth
+    that some transcriptions kept, so it doesn't count."""
+    onsets = [n["onset"] for n in phrase["notes"]]
+    beats_with_4 = {o // TICKS_PER_BEAT for o in onsets if o % TICKS_PER_BEAT == 4}
+    return sum(o % TICKS_PER_BEAT == 4
+               or (o % TICKS_PER_BEAT == 8 and o // TICKS_PER_BEAT in beats_with_4)
+               for o in onsets)
+
+
 def rhythm_shares(phrase: dict) -> tuple[float, float]:
     """(sixteenth share, triplet share) of onsets, by position within the beat."""
     pos = np.array([n["onset"] % TICKS_PER_BEAT for n in phrase["notes"]])
-    return float(np.isin(pos, (3, 9)).mean()), float(np.isin(pos, (4, 8)).mean())
+    return float(np.isin(pos, (3, 9)).mean()), triplet_onsets(phrase) / len(pos)
 
 
 def mean_interval(phrase: dict) -> float | None:
@@ -183,6 +197,7 @@ def compute_features(phrase: dict) -> dict:
         "arch": arch,
         "sixteenth_share": sixteenth,
         "triplet_share": triplet,
+        "triplet_notes": triplet_onsets(phrase),
         "mean_interval": mean_interval(phrase),
         "rest_fraction": rest_fraction(phrase),
         "chord_tone_rate": chord_tone_rate(phrase),
@@ -236,7 +251,8 @@ def to_words(features: dict, bins: dict) -> dict:
 
     sixteenth = third(features["sixteenth_share"], bins["sixteenth_share"])
     triplet = third(features["triplet_share"], bins["triplet_share"])
-    if triplet == 2 and features["triplet_share"] > features["sixteenth_share"]:
+    if (triplet == 2 and features["triplet_share"] > features["sixteenth_share"]
+            and features["triplet_notes"] >= MIN_TRIPLET_NOTES):
         words["rhythm"] = "triplets"
     elif sixteenth == 2:
         words["rhythm"] = "sixteenth runs"
