@@ -43,10 +43,10 @@ def test_token_layout_matches_design_doc():
 def test_vocab_size():
     names = set(remi.vocab())
     assert sum(n.startswith("Position_") for n in names) == remi.TICKS_PER_BAR
-    assert sum(n.startswith("Pitch_") for n in names) == remi.PITCH_MAX - remi.PITCH_MIN + 1
+    n_pitch = remi.PITCH_MAX - remi.PITCH_MIN + 2  # + the unused Pitch_{PITCH_MAX + 1}
+    assert sum(n.startswith("Pitch_") for n in names) == n_pitch
     assert sum(n.startswith("Duration_") for n in names) == remi.MAX_DUR
     assert {"PAD_None", "BOS_None", "EOS_None", "Bar_None"} <= names
-    n_pitch = remi.PITCH_MAX - remi.PITCH_MIN + 1
     assert len(names) == remi.TICKS_PER_BAR + n_pitch + remi.MAX_DUR + 4  # + PAD BOS EOS Bar
 
 

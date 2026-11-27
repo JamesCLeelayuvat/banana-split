@@ -1,6 +1,7 @@
 """miditok REMI config and encode/decode for solo phrases.
 
-Tokens (miditok names): Bar_None, Position_k (12 ticks/beat, 48/bar), Pitch_p (0-126, the widest range miditok allows),
+Tokens (miditok names): Bar_None, Position_k (12 ticks/beat, 48/bar), Pitch_p (0-127; phrases use 0-126,
+PITCH_MAX, and Pitch_127 is an unused extra that miditok 3.1 adds),
 Duration_b.t.12 (1 tick up to 2 bars), specials PAD_None / BOS_None / EOS_None. No velocity,
 tempo, chord, or rest tokens: rests are implied by gaps between positions.
 
@@ -47,7 +48,10 @@ class TokenizeError(ValueError):
 @lru_cache(maxsize=1)
 def build_tokenizer() -> REMI:
     config = TokenizerConfig(
-        pitch_range=(PITCH_MIN, PITCH_MAX + 1),  # miditok's upper bound is exclusive
+        # miditok 3.1 treats this upper bound as inclusive, so the vocab also gets an unused
+        # Pitch_{PITCH_MAX + 1}. Keep it: checkpoints were trained with that vocab (276 tokens),
+        # and removing it would shift every Position/Duration id. Needs miditok==3.1.1.
+        pitch_range=(PITCH_MIN, PITCH_MAX + 1),
         # one resolution for the whole duration range: every tick from 1 to 2 bars is a token
         beat_res={(0, 2 * BEATS_PER_BAR): TICKS_PER_BEAT},
         special_tokens=SPECIAL_TOKENS,

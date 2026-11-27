@@ -230,6 +230,11 @@ def load_model(ckpt_path: str | Path, device: str | torch.device = "cpu") -> Sol
     """Rebuild a SoloModel from a train.py checkpoint (best.pt)."""
     ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
     model = SoloModel(ckpt["model_cfg"], ckpt["train_cfg"]["conditioning"])
+    trained, here = ckpt["model"]["decoder.tok.weight"].shape[0], model.decoder.tok.weight.shape[0]
+    if trained != here:
+        raise SystemExit(f"{ckpt_path} was trained with a {trained}-token vocabulary but this "
+                         f"environment builds {here}: the miditok version differs (see "
+                         f"environment.yml for the pinned one)")
     model.load_state_dict(ckpt["model"])
     return model.to(device).eval()
 
