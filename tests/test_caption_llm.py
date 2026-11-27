@@ -1,6 +1,5 @@
 """LLM captioning, offline: prompt building, request shape, response validation."""
 import json
-from types import SimpleNamespace
 
 import pytest
 
@@ -11,11 +10,12 @@ WORDS = {"register": "high", "density": "dense", "contour": "descending", "rhyth
          "style": "bebop", "tempo": "up-tempo", "instrument": "alto sax"}
 
 
-def message(captions, stop_reason="end_turn"):
-    text = json.dumps({"captions": captions})
-    return SimpleNamespace(stop_reason=stop_reason,
-                           content=[SimpleNamespace(type="thinking", thinking=""),
-                                    SimpleNamespace(type="text", text=text)])
+def response(captions, finish="STOP"):
+    """A GenerateContentResponse in REST dict form, with a thought part before the answer."""
+    return {"candidates": [{"finishReason": finish, "content": {"role": "model", "parts": [
+        {"text": "thinking...", "thought": True},
+        {"text": json.dumps({"captions": captions})},
+    ]}}]}
 
 
 def test_describe_skips_unmeasured_and_keeps_order():
@@ -27,9 +27,9 @@ def test_describe_skips_unmeasured_and_keeps_order():
 def test_system_prompt_includes_examples_and_is_deterministic():
     ex = [{"feature_words": {"register": "low"}, "caption": "a low, lazy line"}]
     a, b = C.build_system(ex), C.build_system(ex)
-    assert a == b  # identical across requests, so the prompt cache can hit
-    assert "a low, lazy line" in a[0]["text"] and a[0]["cache_control"] == {"type": "ephemeral"}
-    assert "a low, lazy line" not in C.build_system([])[0]["text"]
+    assert a == b  # identical across requests, so implicit caching can hit
+    assert "a low, lazy line" in a
+    assert "a low, lazy line" not in C.build_system([])
 
 
 def test_load_examples_skips_unwritten(tmp_path):
@@ -39,28 +39,57 @@ def test_load_examples_skips_unwritten(tmp_path):
     assert [e["caption"] for e in C.load_examples(path)] == ["dense line"]
 
 
-def test_request_params_are_valid_batch_params():
-    from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
-    from anthropic.types.messages.batch_create_params import Request
+def test_request_body_is_valid_for_sdk_and_batch_file():
+    from google.genai import types
 
-    params = C.request_params(WORDS, C.build_system([]))
-    assert params["output_config"]["format"]["schema"] == C.SCHEMA
-    assert "register: high" in params["messages"][0]["content"]
-    Request(custom_id="p", params=MessageCreateParamsNonStreaming(**params))
+    body = C.request_body(WORDS, C.build_system([]))
+    assert "register: high" in body["contents"][0]["parts"][0]["text"]
+    json.dumps({"key": "p", "request": body})  # batch input line must serialize
+    config = types.GenerateContentConfig.model_validate(
+        {**body["generationConfig"], "systemInstruction": body["systemInstruction"]})
+    assert config.response_json_schema == C.SCHEMA
+    assert config.thinking_config.thinking_level == types.ThinkingLevel.LOW
+    assert config.system_instruction.parts[0].text == C.SYSTEM
+    types.Content.model_validate(body["contents"][0])
 
 
-def test_parse_captions_accepts_three_distinct():
+def test_parse_captions_accepts_three_distinct_and_skips_thoughts():
     caps = ["a dense high line", "dense and high", "dense high bebop"]
-    assert C.parse_captions(message([c + " " for c in caps])) == caps
+    assert C.parse_captions(response([c + " " for c in caps])) == caps
 
 
-@pytest.mark.parametrize("caps,stop", [
-    (["one", "two"], "end_turn"),                 # wrong count
-    (["same", "same", "other"], "end_turn"),       # duplicates
-    (["one", "", "three"], "end_turn"),            # empty
-    (["a", "b", "c"], "refusal"),
-    (["a", "b", "c"], "max_tokens"),
+def test_parse_captions_reads_sdk_response():
+    from google.genai import types
+
+    caps = ["a dense high line", "dense and high", "dense high bebop"]
+    sdk = types.GenerateContentResponse.model_validate(response(caps))
+    assert C.parse_captions(sdk.model_dump(mode="json", by_alias=True, exclude_none=True)) == caps
+
+
+@pytest.mark.parametrize("resp", [
+    response(["one", "two"]),                         # wrong count
+    response(["same", "same", "other"]),              # duplicates
+    response(["one", "", "three"]),                   # empty
+    response(["a", "b", "c"], "SAFETY"),
+    response(["a", "b", "c"], "MAX_TOKENS"),
+    {"promptFeedback": {"blockReason": "SAFETY"}},
+    {"candidates": []},
 ])
-def test_parse_captions_rejects(caps, stop):
+def test_parse_captions_rejects(resp):
     with pytest.raises(ValueError):
-        C.parse_captions(message(caps, stop))
+        C.parse_captions(resp)
+
+
+def test_write_results_appends_good_rows_and_counts_failures(tmp_path):
+    out = tmp_path / "captions.jsonl"
+    out.write_text(json.dumps({"phrase_id": "old", "captions": ["x", "y", "z"]}) + "\n")
+    good = ["a dense high line", "dense and high", "dense high bebop"]
+    raw = "\n".join(json.dumps(r) for r in [
+        {"key": "p1", "response": response(good)},
+        {"key": "old", "response": response(good)},          # already captioned: skipped
+        {"key": "p2", "error": {"code": 500, "message": "boom"}},
+        {"key": "p3", "response": response(["a", "a", "b"])},
+    ]).encode()
+    ok, failed = C.write_results(raw, out)
+    assert ok == 1 and sum(failed.values()) == 2
+    assert C.load_done(out) == {"old", "p1"}

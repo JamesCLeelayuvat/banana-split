@@ -8,19 +8,21 @@ Steps (python -m src.captions.caption_llm <command>):
     pick-examples  choose ~30 varied training phrases and write them to examples.json with an
                    empty "caption" for you to fill in (listen with the render command shown)
     try            caption a few phrases right away and print them, to check the prompt
-    submit         send every phrase that has no caption yet to the Message Batches API
-                   (50% price, usually done within an hour); batch ids go to batches.json
+    submit         send every phrase that has no caption yet to the Gemini Batch API
+                   (50% price, usually done within a few hours); batch ids go to batches.json
     collect        wait for the submitted batches and append their captions to captions.jsonl
 
 Re-running submit only sends phrases still missing from captions.jsonl, so a phrase whose
 captions failed validation is simply picked up again.
 
-Needs ANTHROPIC_API_KEY (or an `ant auth login` profile).
+Uses Gemini through the google-genai SDK. Needs GEMINI_API_KEY, set in the environment or as a
+line in a .env file at the repo root (gitignored).
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import sys
 import time
@@ -30,11 +32,11 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 EXAMPLES = Path(__file__).with_name("examples.json")
-MODEL = "claude-opus-5-5"
-EFFORT = "low"            # paraphrasing a handful of given words; little reasoning needed
-MAX_TOKENS = 4096         # thinking counts toward this; captions themselves are ~100 tokens
+MODEL = "gemini-3.8-flash"
+THINKING = "LOW"          # paraphrasing a handful of given words; little reasoning needed
+MAX_TOKENS = 4096         # captions themselves are ~100 tokens
 N_CAPTIONS = 3
-BATCH_CHUNK = 5000        # requests per batch (limit is 100k / 256 MB; smaller is easier to retry)
+BATCH_CHUNK = 5000        # requests per batch job (smaller is easier to retry)
 
 # Order in which features are shown to the model (fixed, so prompts are deterministic).
 FEATURE_ORDER = ("register", "density", "contour", "rhythm", "harmony", "range", "intervals",
@@ -43,10 +45,12 @@ CONTEXT_ORDER = ("style", "tempo", "instrument")
 
 SCHEMA = {
     "type": "object",
-    "properties": {"captions": {"type": "array", "items": {"type": "string"}}},
+    "properties": {"captions": {"type": "array", "items": {"type": "string"},
+                                "minItems": N_CAPTIONS, "maxItems": N_CAPTIONS}},
     "required": ["captions"],
-    "additionalProperties": False,
 }
+DONE_STATES = {"JOB_STATE_SUCCEEDED", "JOB_STATE_PARTIALLY_SUCCEEDED"}
+FAILED_STATES = {"JOB_STATE_FAILED", "JOB_STATE_CANCELLED", "JOB_STATE_EXPIRED"}
 
 SYSTEM = """\
 You write short descriptions of jazz solo phrases, the way one musician would describe a line \
@@ -84,6 +88,27 @@ listed. Keep each under 35 words. No numbers.
 
 Return JSON: {{"captions": [...]}} with exactly {n} strings.\
 """.format(n=N_CAPTIONS)
+
+
+# ---------------------------------------------------------------- client
+
+def load_env(path: Path = ROOT / ".env") -> None:
+    """Read KEY=VALUE lines from .env into os.environ (real environment variables win)."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        key, sep, value = line.strip().partition("=")
+        if sep and key and not key.startswith("#"):
+            os.environ.setdefault(key.strip(), value.strip().strip("'\""))
+
+
+def make_client():
+    from google import genai
+
+    load_env()
+    if not (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
+        sys.exit("set GEMINI_API_KEY (environment variable, or a line in .env at the repo root)")
+    return genai.Client()
 
 
 # ---------------------------------------------------------------- data
@@ -126,43 +151,57 @@ def describe(feature_words: dict) -> str:
     return "\n".join(lines)
 
 
-def build_system(examples: list[dict]) -> list[dict]:
-    """System prompt: instructions + examples. Identical for every phrase, so it is cached."""
+def build_system(examples: list[dict]) -> str:
+    """System instruction: instructions + examples. Identical for every phrase, so Gemini's
+    implicit prompt caching can reuse it across requests."""
     text = SYSTEM
     if examples:
         shots = "\n\n".join(f"<example>\n{describe(e['feature_words'])}\n"
                             f"caption: {e['caption'].strip()}\n</example>" for e in examples)
         text += ("\n\nHand-written captions for other phrases, showing the vocabulary and tone "
                  "we want (each shows one caption; you write " + str(N_CAPTIONS) + "):\n\n" + shots)
-    return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
+    return text
 
 
 def build_prompt(feature_words: dict) -> str:
     """User message for one phrase. Context (style, tempo, instrument) is already among the
-    feature words, and the examples live in the shared system prompt."""
+    feature words, and the examples live in the shared system instruction."""
     return f"<phrase>\n{describe(feature_words)}\n</phrase>"
 
 
-def request_params(feature_words: dict, system: list[dict], model: str = MODEL) -> dict:
+def request_body(feature_words: dict, system: str) -> dict:
+    """One GenerateContentRequest in REST (camelCase) form: a line of the batch input file,
+    and also what the synchronous call sends."""
     return {
-        "model": model,
-        "max_tokens": MAX_TOKENS,
-        "system": system,
-        "messages": [{"role": "user", "content": build_prompt(feature_words)}],
-        "output_config": {"effort": EFFORT,
-                          "format": {"type": "json_schema", "schema": SCHEMA}},
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": [{"text": build_prompt(feature_words)}]}],
+        "generationConfig": {
+            "maxOutputTokens": MAX_TOKENS,
+            "thinkingConfig": {"thinkingLevel": THINKING},
+            "responseMimeType": "application/json",
+            "responseJsonSchema": SCHEMA,
+        },
     }
 
 
-def parse_captions(message) -> list[str]:
-    """Validated captions from a response, or raise ValueError with the reason."""
-    if message.stop_reason == "refusal":
-        raise ValueError("refused")
-    if message.stop_reason == "max_tokens":
+def parse_captions(response: dict) -> list[str]:
+    """Validated captions from a GenerateContentResponse (REST dict form), or raise ValueError
+    with the reason."""
+    if reason := (response.get("promptFeedback") or {}).get("blockReason"):
+        raise ValueError(f"blocked: {reason}")
+    candidates = response.get("candidates") or []
+    if not candidates:
+        raise ValueError("no candidates")
+    cand = candidates[0]
+    finish = cand.get("finishReason", "STOP")
+    if finish == "MAX_TOKENS":
         raise ValueError("hit max_tokens")
-    text = next((b.text for b in message.content if b.type == "text"), None)
-    if text is None:
-        raise ValueError("no text block")
+    if finish != "STOP":
+        raise ValueError(f"finish reason {finish}")
+    text = "".join(p.get("text", "") for p in (cand.get("content") or {}).get("parts", [])
+                   if not p.get("thought"))
+    if not text:
+        raise ValueError("no text")
     caps = [c.strip() for c in json.loads(text)["captions"]]
     if len(caps) != N_CAPTIONS or not all(caps) or len(set(caps)) != N_CAPTIONS:
         raise ValueError(f"expected {N_CAPTIONS} distinct non-empty captions, got {caps!r}")
@@ -174,15 +213,15 @@ def parse_captions(message) -> list[str]:
 def caption_phrase(feature_words: dict, examples: list[dict] | None = None, client=None,
                    model: str = MODEL) -> list[str]:
     """Caption one phrase with a direct API call (for `try` and spot checks)."""
-    import anthropic
+    from google.genai import types
 
-    client = client or anthropic.Anthropic()
-    params = request_params(feature_words, build_system(examples or []), model)
-    # Server-side fallback: if the model declines (very unlikely here), the API reruns the
-    # request on a fallback model in the same call. Not available on the Batches API.
-    message = client.beta.messages.create(**params, betas=["server-side-fallback-2026-07-01"],
-                                          fallbacks="default")
-    return parse_captions(message)
+    client = client or make_client()
+    body = request_body(feature_words, build_system(examples or []))
+    config = types.GenerateContentConfig.model_validate(
+        {**body["generationConfig"], "systemInstruction": body["systemInstruction"]})
+    response = client.models.generate_content(model=model, contents=body["contents"],
+                                              config=config)
+    return parse_captions(response.model_dump(mode="json", by_alias=True, exclude_none=True))
 
 
 # ---------------------------------------------------------------- commands
@@ -224,30 +263,26 @@ def cmd_pick_examples(args) -> None:
 
 
 def cmd_try(args) -> None:
-    import anthropic
-
     feats = load_features()
     examples = load_examples()
     if not examples:
         print("note: no hand-written examples yet; captions will use the instructions alone\n")
     ids = args.ids or random.Random(args.seed).sample(
         [pid for pid, r in feats.items() if r["split"] == "train"], args.n)
-    client = anthropic.Anthropic()
+    client = make_client()
     for pid in ids:
         words = feats[pid]["words"]
         print(f"== {pid}\n{describe(words)}")
         try:
             for c in caption_phrase(words, examples=examples, client=client, model=args.model):
                 print(f"  - {c}")
-        except ValueError as e:
+        except (ValueError, json.JSONDecodeError, KeyError) as e:
             print(f"  ! {e}")
         print()
 
 
 def cmd_submit(args) -> None:
-    import anthropic
-    from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
-    from anthropic.types.messages.batch_create_params import Request
+    from google.genai import types
 
     paths = _paths()
     out_path = paths["captions"]
@@ -264,71 +299,92 @@ def cmd_submit(args) -> None:
         return
 
     system = build_system(examples)
-    client = anthropic.Anthropic()
-    sample = request_params(feats[todo[0]]["words"], system, args.model)
-    sample.pop("max_tokens")
-    n_in = client.messages.count_tokens(**{k: sample[k] for k in ("model", "system", "messages")}
-                                        ).input_tokens
+    client = make_client()
+    n_in = client.models.count_tokens(
+        model=args.model, contents=system + "\n\n" + build_prompt(feats[todo[0]]["words"])
+    ).total_tokens
     print(f"{len(todo)} phrases to caption with {args.model}; ~{n_in} input tokens each "
-          f"(~{n_in * len(todo) / 1e6:.1f}M total before caching), plus thinking and output.")
+          f"(~{n_in * len(todo) / 1e6:.1f}M total), plus thinking and output.")
     if not args.yes:
-        sys.exit("re-run with --yes to submit (batches bill at 50% of standard prices)")
+        sys.exit("re-run with --yes to submit (batch jobs bill at 50% of standard prices)")
 
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     state_path = out_path.parent / "batches.json"
     state = json.loads(state_path.read_text()) if state_path.exists() else []
-    for start in range(0, len(todo), BATCH_CHUNK):
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    for i, start in enumerate(range(0, len(todo), BATCH_CHUNK)):
         chunk = todo[start:start + BATCH_CHUNK]
-        batch = client.messages.batches.create(requests=[
-            Request(custom_id=pid,
-                    params=MessageCreateParamsNonStreaming(
-                        **request_params(feats[pid]["words"], system, args.model)))
-            for pid in chunk
-        ])
-        state.append({"id": batch.id, "n": len(chunk), "collected": False})
+        src_path = out_path.parent / f"batch_input_{stamp}_{i}.jsonl"
+        with open(src_path, "w", encoding="utf-8") as f:
+            for pid in chunk:
+                f.write(json.dumps({"key": pid,
+                                    "request": request_body(feats[pid]["words"], system)}) + "\n")
+        uploaded = client.files.upload(file=src_path, config=types.UploadFileConfig(
+            display_name=src_path.stem, mime_type="jsonl"))
+        batch = client.batches.create(model=args.model, src=uploaded.name,
+                                      config={"display_name": f"captions-{stamp}-{i}"})
+        state.append({"id": batch.name, "n": len(chunk), "model": args.model,
+                      "collected": False})
         state_path.write_text(json.dumps(state, indent=2))
-        print(f"submitted {batch.id} ({len(chunk)} phrases)")
+        print(f"submitted {batch.name} ({len(chunk)} phrases)")
     print(f"batch ids in {state_path}; run `collect` to fetch results")
 
 
-def cmd_collect(args) -> None:
-    import anthropic
+def write_results(raw: bytes, out_path: Path) -> tuple[int, dict]:
+    """Append validated captions from a batch output file; return (n written, failure counts)."""
+    done = load_done(out_path)
+    ok, failed = 0, {}
+    with open(out_path, "a", encoding="utf-8") as f:
+        for line in raw.decode("utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            pid = row.get("key")
+            try:
+                if "error" in row:
+                    raise ValueError(f"error {row['error'].get('code', '')}".strip())
+                caps = parse_captions(row["response"])
+            except (ValueError, json.JSONDecodeError, KeyError) as e:
+                failed[str(e)[:60]] = failed.get(str(e)[:60], 0) + 1
+                continue
+            if pid not in done:
+                f.write(json.dumps({"phrase_id": pid, "captions": caps}) + "\n")
+                done.add(pid)
+                ok += 1
+    return ok, failed
 
+
+def cmd_collect(args) -> None:
     out_path = _paths()["captions"]
     state_path = out_path.parent / "batches.json"
     if not state_path.exists():
         sys.exit(f"no {state_path}: nothing submitted yet")
     state = json.loads(state_path.read_text())
-    client = anthropic.Anthropic()
+    client = make_client()
     out_path.parent.mkdir(parents=True, exist_ok=True)
     for entry in [e for e in state if not e["collected"]]:
-        while (batch := client.messages.batches.retrieve(entry["id"])).processing_status != "ended":
+        if not entry["id"].startswith("batches/"):
+            print(f"{entry['id']}: not a Gemini batch (left over from the old setup); skipping")
+            continue
+        while (batch := client.batches.get(name=entry["id"])).state.name not in (
+                DONE_STATES | FAILED_STATES):
             if not args.wait:
-                print(f"{entry['id']}: {batch.processing_status} "
-                      f"({batch.request_counts.processing} still processing)")
+                print(f"{entry['id']}: {batch.state.name}")
                 break
             time.sleep(60)
         else:
-            done = load_done(out_path)
-            ok, failed = 0, {}
-            with open(out_path, "a", encoding="utf-8") as f:
-                for result in client.messages.batches.results(entry["id"]):
-                    pid = result.custom_id
-                    if result.result.type != "succeeded":
-                        failed[result.result.type] = failed.get(result.result.type, 0) + 1
-                        continue
-                    try:
-                        caps = parse_captions(result.result.message)
-                    except (ValueError, json.JSONDecodeError, KeyError) as e:
-                        failed[str(e)[:60]] = failed.get(str(e)[:60], 0) + 1
-                        continue
-                    if pid not in done:
-                        f.write(json.dumps({"phrase_id": pid, "captions": caps}) + "\n")
-                        done.add(pid)
-                        ok += 1
+            if batch.state.name in FAILED_STATES:
+                print(f"{entry['id']}: {batch.state.name}"
+                      + (f" ({batch.error.message})" if batch.error else "")
+                      + "; its phrases will be resent by the next submit")
+            else:
+                ok, failed = write_results(client.files.download(file=batch.dest.file_name),
+                                           out_path)
+                print(f"{entry['id']}: {ok} captioned" + (f", failed: {failed}" if failed else ""))
             entry["collected"] = True
             state_path.write_text(json.dumps(state, indent=2))
-            print(f"{entry['id']}: {ok} captioned" + (f", failed: {failed}" if failed else ""))
-    remaining = [e["id"] for e in state if not e["collected"]]
+    remaining = [e["id"] for e in state
+                 if not e["collected"] and e["id"].startswith("batches/")]
     if remaining:
         print(f"{len(remaining)} batch(es) not finished; run collect again (or with --wait)")
     else:
@@ -352,7 +408,7 @@ def main() -> None:
     p.add_argument("--model", default=MODEL)
     p.set_defaults(func=cmd_try)
 
-    p = sub.add_parser("submit", help="send uncaptioned phrases to the Batches API")
+    p = sub.add_parser("submit", help="send uncaptioned phrases to the Gemini Batch API")
     p.add_argument("--splits", nargs="*", choices=("train", "val", "test"),
                    help="only these splits (default: all)")
     p.add_argument("--model", default=MODEL)
